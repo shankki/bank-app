@@ -59,22 +59,28 @@ public class AccountServiceImpl implements AccountService {
             if (transactionRequest.getTransactionType().equalsIgnoreCase("Withdraw")) {
                 return withdrawMoneyResponse(transactionRequest, account, acc);
             }
-            throw new InvalidInputParameterException("Invalid transaction type selected : "+ transactionRequest.getTransactionType());
+            throw new InvalidInputParameterException("Invalid transaction type selected : " + transactionRequest.getTransactionType());
         } else {
             throw new EntityNotFoundException("Account details not found for account id : " + transactionRequest.getAccountId());
         }
     }
 
+    /**
+     *
+     * @param transactionRequest
+     * @param account
+     * @param acc
+     * @return
+     */
     private ResponseEntity<SuccessResponseDto> withdrawMoneyResponse(TransactionRequestDto transactionRequest, Optional<Account> account, Account acc) {
         if ((transactionRequest.getAmount() < account.get().getBalance()) && (account.get().getBalance() > 0.01)) {
             acc.setBalance((acc.getBalance() - transactionRequest.getAmount()));
             accountDao.save(acc);
             log.info("Money deducted successfully.");
-            updateTxnDetails(transactionRequest, acc);
+            updateTxnDetails(transactionRequest);
             log.info("Transaction details for withdraw money updated successfully!");
             return ResponseEntity.ok(new SuccessResponseDto("Dear, " + acc.getUser().getFirstName() + "Your withdrawn Successfully!", "Your updated account balance is : " + acc.getBalance()));
         } else {
-            updateTxnDetails(transactionRequest, acc);
             throw new InvalidInputParameterException("Transaction failed as available balance in your account is less than your withdraw amount request");
         }
     }
@@ -84,17 +90,16 @@ public class AccountServiceImpl implements AccountService {
             acc.setBalance((acc.getBalance() + transactionRequest.getAmount()));
             accountDao.save(acc);
             log.info("Amount deposited successfully!");
-            updateTxnDetails(transactionRequest, acc);
+            updateTxnDetails(transactionRequest);
             log.info("Transaction details for deposit money updated successfully!");
             return ResponseEntity.ok(new SuccessResponseDto("Dear, " + acc.getUser().getFirstName(),
                     "Your money is deposited Successfully!"));
         } else {
-            updateTxnDetails(transactionRequest, acc);
             throw new InvalidInputParameterException("The deposit amount cannot be less than 0.01 rupees");
         }
     }
 
-    private void updateTxnDetails(TransactionRequestDto transactionRequest, Account account) {
+    private void updateTxnDetails(TransactionRequestDto transactionRequest) {
         log.info("updating transaction details for account id {} : ", transactionRequest.getAccountId());
         Transaction transaction = new Transaction();
         transaction.setAccountId(transactionRequest.getAccountId());
@@ -102,10 +107,6 @@ public class AccountServiceImpl implements AccountService {
         transaction.setTransactionDate(LocalDate.now());
         transaction.setUserId(transactionRequest.getUserId());
         transaction.setTransactionAmount(transactionRequest.getAmount());
-        if ((transactionRequest.getAmount() < 0.01 && transactionRequest.getTransactionType().equalsIgnoreCase("Deposit")) ||
-                (transactionRequest.getAmount() > account.getBalance() && transactionRequest.getTransactionType().equalsIgnoreCase("Withdraw"))){
-            transaction.setTransactionStatus(false);
-        }
         transaction.setTransactionStatus(true);
         transactionDao.save(transaction);
         log.info("transaction details saved successfully!");
@@ -131,6 +132,7 @@ public class AccountServiceImpl implements AccountService {
         log.info("inside method getAccountBalance of class AccountServiceImpl");
         Optional<Account> account = accountDao.findById(accountId);
         if (account.isPresent()) {
+            log.info("Account details fetched successfully for account id {} : ",accountId);
             Account accountDetails = account.get();
             return ResponseEntity.ok(new SuccessResponseDto("Balance : " + accountDetails.getBalance(), "Account balance fetched successfully!"));
         } else {
@@ -143,10 +145,13 @@ public class AccountServiceImpl implements AccountService {
         log.info("inside method getUserAccountTransactionHistory of class AccountServiceImpl");
         List<Transaction> transactionList = transactionDao.findTransactionsByAccountId(accountId);
         if (!transactionList.isEmpty()) {
+            log.info("Transaction list fetched successfully for account id {} : ", accountId);
             return ResponseEntity.ok(new SuccessResponseDto(transactionList, "Transactions fetched successfully!"));
         }
         throw new EntityNotFoundException("Transaction details not found for the account id : " + accountId);
     }
+
+
 
 
 }
