@@ -9,13 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,6 +43,19 @@ public class AccountController {
         return accountService.userTransaction(transactionRequest);
     }
 
+
+    @GetMapping("/{accountId}/balance")
+    public ResponseEntity<?> checkAccountBalance(@NotNull @PathVariable Integer accountId){
+        log.info("inside checkAccountBalance method of AccountController with account id {} : ", accountId);
+        return accountService.getAccountBalance(accountId);
+    }
+
+
+    @GetMapping("/{accountId}/transaction-history")
+    public ResponseEntity<?> checkUserTransactionHistory(@NotNull @PathVariable Integer accountId){
+        log.info("inside checkUserTransactionHistory method of AccountController with account id {} : ", accountId);
+        return accountService.getUserAccountTransactionHistory(accountId);
+    }
 
 
 }

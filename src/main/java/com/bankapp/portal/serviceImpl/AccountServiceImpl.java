@@ -13,15 +13,20 @@ import com.bankapp.portal.service.AccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
+/**
+ * @author Shankar Katkade (14-06-2021)
+ * @version 1.0
+ * <p> This class contains implementation for all the methods related to the account service </p>
+ */
 @Service
 public class AccountServiceImpl implements AccountService {
 
@@ -54,10 +59,10 @@ public class AccountServiceImpl implements AccountService {
             if (transactionRequest.getTransactionType().equalsIgnoreCase("Withdraw")) {
                 return withdrawMoneyResponse(transactionRequest, account, acc);
             }
+            throw new InvalidInputParameterException("Invalid transaction type selected : "+ transactionRequest.getTransactionType());
         } else {
             throw new EntityNotFoundException("Account details not found for account id : " + transactionRequest.getAccountId());
         }
-        return new ResponseEntity("Method not implemented", HttpStatus.NOT_IMPLEMENTED);
     }
 
     private ResponseEntity<SuccessResponseDto> withdrawMoneyResponse(TransactionRequestDto transactionRequest, Optional<Account> account, Account acc) {
@@ -65,9 +70,11 @@ public class AccountServiceImpl implements AccountService {
             acc.setBalance((acc.getBalance() - transactionRequest.getAmount()));
             accountDao.save(acc);
             log.info("Money deducted successfully.");
-            updateTxnDetails(transactionRequest);
+            updateTxnDetails(transactionRequest, acc);
+            log.info("Transaction details for withdraw money updated successfully!");
             return ResponseEntity.ok(new SuccessResponseDto("Dear, " + acc.getUser().getFirstName() + "Your withdrawn Successfully!", "Your updated account balance is : " + acc.getBalance()));
         } else {
+            updateTxnDetails(transactionRequest, acc);
             throw new InvalidInputParameterException("Transaction failed as available balance in your account is less than your withdraw amount request");
         }
     }
@@ -77,15 +84,17 @@ public class AccountServiceImpl implements AccountService {
             acc.setBalance((acc.getBalance() + transactionRequest.getAmount()));
             accountDao.save(acc);
             log.info("Amount deposited successfully!");
-            updateTxnDetails(transactionRequest);
-            return ResponseEntity.ok(new SuccessResponseDto("Dear ," + acc.getUser().getFirstName(),
+            updateTxnDetails(transactionRequest, acc);
+            log.info("Transaction details for deposit money updated successfully!");
+            return ResponseEntity.ok(new SuccessResponseDto("Dear, " + acc.getUser().getFirstName(),
                     "Your money is deposited Successfully!"));
         } else {
+            updateTxnDetails(transactionRequest, acc);
             throw new InvalidInputParameterException("The deposit amount cannot be less than 0.01 rupees");
         }
     }
 
-    private void updateTxnDetails(TransactionRequestDto transactionRequest) {
+    private void updateTxnDetails(TransactionRequestDto transactionRequest, Account account) {
         log.info("updating transaction details for account id {} : ", transactionRequest.getAccountId());
         Transaction transaction = new Transaction();
         transaction.setAccountId(transactionRequest.getAccountId());
@@ -93,6 +102,10 @@ public class AccountServiceImpl implements AccountService {
         transaction.setTransactionDate(LocalDate.now());
         transaction.setUserId(transactionRequest.getUserId());
         transaction.setTransactionAmount(transactionRequest.getAmount());
+        if ((transactionRequest.getAmount() < 0.01 && transactionRequest.getTransactionType().equalsIgnoreCase("Deposit")) ||
+                (transactionRequest.getAmount() > account.getBalance() && transactionRequest.getTransactionType().equalsIgnoreCase("Withdraw"))){
+            transaction.setTransactionStatus(false);
+        }
         transaction.setTransactionStatus(true);
         transactionDao.save(transaction);
         log.info("transaction details saved successfully!");
@@ -112,6 +125,28 @@ public class AccountServiceImpl implements AccountService {
         return user.isPresent();
     }
 
+
+    @Override
+    public ResponseEntity getAccountBalance(Integer accountId) {
+        log.info("inside method getAccountBalance of class AccountServiceImpl");
+        Optional<Account> account = accountDao.findById(accountId);
+        if (account.isPresent()) {
+            Account accountDetails = account.get();
+            return ResponseEntity.ok(new SuccessResponseDto("Balance : " + accountDetails.getBalance(), "Account balance fetched successfully!"));
+        } else {
+            throw new EntityNotFoundException("Details not found for account id : " + accountId);
+        }
+    }
+
+    @Override
+    public ResponseEntity getUserAccountTransactionHistory(Integer accountId) {
+        log.info("inside method getUserAccountTransactionHistory of class AccountServiceImpl");
+        List<Transaction> transactionList = transactionDao.findTransactionsByAccountId(accountId);
+        if (!transactionList.isEmpty()) {
+            return ResponseEntity.ok(new SuccessResponseDto(transactionList, "Transactions fetched successfully!"));
+        }
+        throw new EntityNotFoundException("Transaction details not found for the account id : " + accountId);
+    }
 
 
 }

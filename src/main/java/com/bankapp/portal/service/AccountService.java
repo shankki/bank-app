@@ -12,4 +12,8 @@ public interface AccountService {
 
     boolean userExists(int userId);
 
+    ResponseEntity getAccountBalance(Integer accountId);
+
+    ResponseEntity getUserAccountTransactionHistory(Integer accountId);
+
 }
