@@ -1,5 +1,6 @@
 package com.bankapp.portal.service;
 
+import com.bankapp.portal.dto.SuccessResponseDto;
 import com.bankapp.portal.dto.TransactionRequestDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -8,12 +9,12 @@ import org.springframework.stereotype.Component;
 public interface AccountService {
 
 
-    ResponseEntity userTransaction(TransactionRequestDto depositMoneyRequest);
+    SuccessResponseDto userTransaction(TransactionRequestDto depositMoneyRequest);
 
     boolean userExists(int userId);
 
-    ResponseEntity getAccountBalance(Integer accountId);
+    SuccessResponseDto getAccountBalance(Integer accountId);
 
-    ResponseEntity getUserAccountTransactionHistory(Integer accountId);
+    SuccessResponseDto getUserAccountTransactionHistory(Integer accountId);
 
 }

@@ -1,6 +1,7 @@
 package com.bankapp.portal.controller;
 
 
+import com.bankapp.portal.dto.SuccessResponseDto;
 import com.bankapp.portal.dto.TransactionRequestDto;
 import com.bankapp.portal.service.AccountService;
 import org.slf4j.Logger;
@@ -40,21 +41,24 @@ public class AccountController {
             List<String> validationMessages =  errors.getAllErrors().stream().map(e->e.getDefaultMessage()).collect(Collectors.toList());
             return ResponseEntity.badRequest().body(validationMessages);
         }
-        return accountService.userTransaction(transactionRequest);
+        SuccessResponseDto response = accountService.userTransaction(transactionRequest);
+        return ResponseEntity.ok(response);
     }
 
 
     @GetMapping("/{accountId}/balance")
     public ResponseEntity<?> checkAccountBalance(@NotNull @PathVariable Integer accountId){
         log.info("inside checkAccountBalance method of AccountController with account id {} : ", accountId);
-        return accountService.getAccountBalance(accountId);
+        SuccessResponseDto response = accountService.getAccountBalance(accountId);
+        return ResponseEntity.ok(response);
     }
 
 
     @GetMapping("/{accountId}/transaction-history")
     public ResponseEntity<?> checkUserTransactionHistory(@NotNull @PathVariable Integer accountId){
         log.info("inside checkUserTransactionHistory method of AccountController with account id {} : ", accountId);
-        return accountService.getUserAccountTransactionHistory(accountId);
+        SuccessResponseDto response =  accountService.getUserAccountTransactionHistory(accountId);
+        return ResponseEntity.ok(response);
     }
 
 
